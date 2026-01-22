@@ -1,7 +1,7 @@
 import { EmbedBuilder, userMention } from "discord.js";
 
 const CHANNEL_NAME = process.env.CHANNEL_NAME;
-const MEME_URL = process.env.MEME_URL || "";
+const MEME_URL = process.env.MEME_URL ;
 
 const event = {
   name: "guildMemberAdd",
@@ -13,7 +13,7 @@ const event = {
     /*
       TODO: Change getWelcomeMessage to getWelcomeMessageWithMeme to send a meme to welcome your user.
     */
-    const welcomeMessage = await getWelcomeMessage(member.id);
+    const welcomeMessage = await getWelcomeMessageWithMeme(member.id);
     channel.send(welcomeMessage);
   },
 };
@@ -42,7 +42,7 @@ const getWelcomeMessageWithMeme = async (userId) => {
 
   return {
     content: `Welcome ${userMention(userId)},
-    Here's a meme for you to enjoy!`,
+    This is Will's deployment server. The alpha watches over you all.`,
     embeds: [meme],
   };
 };
