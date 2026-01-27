@@ -1,7 +1,7 @@
 import { EmbedBuilder, userMention } from "discord.js";
 
 const CHANNEL_NAME = process.env.CHANNEL_NAME;
-const MEME_URL = process.env.MEME_URL || "";
+const MEME_URL = process.env.MEME_URL ;
 
 const event = {
   name: "guildMemberAdd",
@@ -13,7 +13,7 @@ const event = {
     /*
       TODO: Change getWelcomeMessage to getWelcomeMessageWithMeme to send a meme to welcome your user.
     */
-    const welcomeMessage = await getWelcomeMessageWithMeme(member.id);
+    const welcomeMessage = await getWelcomeMessage(member.id);
     channel.send(welcomeMessage);
   },
 };
@@ -39,10 +39,11 @@ const getWelcomeMessageWithMeme = async (userId) => {
     TODO: Change this function to return different welcome message with a meme everytime a new user joins.
   */
   const meme = await getWelcomeMeme();
-
+  // TODO: MOZZARTS, if you need to change the message you can! 
+  // This is what I put and you all can and should change it to have fun with it!
   return {
     content: `Welcome ${userMention(userId)},
-    Here's a meme for you to enjoy!`,
+    This is Will's deployment server. The alpha watches over you all.`,
     embeds: [meme],
   };
 };
