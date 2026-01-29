@@ -28,6 +28,16 @@ Now We are in the part of finding our requirements and functions!
 Requirements:
 
 1. Trivia of selected genres of music
+2. Points
+3. Leaderboard
+
+# RELEASE NOTES (Version 1.0): 
+### Added: 
+```
+- Explanation of the rules
+- TODO: Other features added
+
+```
 
 
 
