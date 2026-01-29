@@ -1,5 +1,6 @@
 import {EmbedBuilder, SlashCommandBuilder } from "discord.js";
 // Allows for the path of the rules.json to be used for ease of changing the rules
+// Mainly a helper 
 import {getRules} from "../helpers/rules.js";
 
 export default {
@@ -21,7 +22,7 @@ export default {
         )
         .setFooter({ text: 'Good luck, maestro!' });
 
-        //Ephemeral allows for the user that requested the rules to see it
+        //Ephemeral allows for only the user that requested the rules to see it
         await interaction.reply({
         content: "Here are the rules",
         embeds: [embed],
