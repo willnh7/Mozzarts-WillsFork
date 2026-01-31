@@ -92,4 +92,11 @@ npm i -D @discordjs/rest discord-api-types
 - Explanation of the rules
 ```
 
+> # Version 1.0.4
+> ### Khoa Vo - Release Notes
+### Added:
+```
+- Basic genre feature that allows user to select the genre of the song
+```
+
 
