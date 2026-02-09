@@ -3,8 +3,8 @@
   "intro": "Firstly we hope you enjoy the trivia! The game provides a variety of genres to test your music knowledge.",
   "difficulties": ["Easy", "Medium", "Hard"],
   "gameplay": [
-    "You will listen to a 5 second clip of a song",
-    "You have 4 multiple choice options to choose from",
+    "Listen to a 30 second clip of a song and guess!(You have 30 seconds)",
+    "4 multiple choice options to choose from",
     "You are awarded points for guessing right", 
     "Based on the difficulty you choose, there will be points deducted"
   ]

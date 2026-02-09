@@ -1,4 +1,5 @@
 // Command to start a music trivia game [VERSION .01]
+// Note: bug with the selection, once there is a selections, it should do?
 
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 

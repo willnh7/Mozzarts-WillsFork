@@ -99,4 +99,11 @@ npm i -D @discordjs/rest discord-api-types
 - Basic genre feature that allows user to select the genre of the song
 ```
 
+> # Version 1.0.5
+> ### Kieran Moynihan - Release Notes
+### Added:
+```  
+- Added a score tracker and a command to see the current score
+```
+
 

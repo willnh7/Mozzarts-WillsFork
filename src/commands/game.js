@@ -17,33 +17,37 @@ import path from "node:path";
 import https from "node:https";
 import http from "node:http";
 import zlib from "node:zlib";
+import rules from "../events/rules.js";
 
+// This is so that the bot can know which channel to join and play music in.
 const VOICE_CHANNEL_NAME = "Game";
 const TEXT_CHANNEL_NAME = "game"; // your channel is #game
 
-const activeGuilds = new Set();
 
+const activeGuilds = new Set();
+// Genres/terms to search for songs
 const TERMS = [
   "jazz", "lofi", "edm", "hip hop", "indie", "rock", "pop",
   "soundtrack", "synthwave", "night drive", "chill"
 ];
-
+// sleep helper
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// picker helper
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
+// logging helpers
 function log(...args) {
   console.log(`[game] ${new Date().toISOString()}`, ...args);
 }
 function logErr(...args) {
   console.error(`[game] ${new Date().toISOString()} ERROR`, ...args);
 }
-
+// finds the voice channel by the VOICE_CHANNEL_NAME
 function findVoiceChannel(guild) {
   return guild.channels.cache.find(
     (c) => c.type === ChannelType.GuildVoice && c.name === VOICE_CHANNEL_NAME
   ) ?? null;
 }
-
+// finds the text channel by the TEXT_CHANNEL_NAME
 function findTextChannel(guild, fallbackChannel) {
   const tc =
     guild.channels.cache.find((c) => {
@@ -53,7 +57,7 @@ function findTextChannel(guild, fallbackChannel) {
     }) ?? null;
   return tc ?? fallbackChannel ?? null;
 }
-
+// Decompression helper for the request buffer
 function decompressIfNeeded(buf, encoding) {
   try {
     if (!encoding) return buf;
@@ -132,41 +136,52 @@ async function requestJson(urlStr) {
   const buf = await requestBuffer(urlStr, { timeoutMs: 25000 });
   return JSON.parse(buf.toString("utf8"));
 }
-
+// This functions gets a random preview url from the iTunes API
 async function getRandomItunesPreview() {
+  // Has 6 attempts to get a valid preview url.
   for (let attempt = 1; attempt <= 6; attempt++) {
     try {
       const term = pick(TERMS);
       const url = new URL("https://itunes.apple.com/search");
+      // The following are the search parameters for the iTunes API
       url.searchParams.set("term", term);
       url.searchParams.set("media", "music");
       url.searchParams.set("entity", "song");
       url.searchParams.set("limit", "50");
       url.searchParams.set("country", "US");
-
+      // Log the attempt, helpful for debugging.
       log(`iTunes search attempt ${attempt} term="${term}"`);
+      // Request the json data from the iTunes API
       const data = await requestJson(url.toString());
 
+      // Checks if the results are valid and contain a preview(prevents crashes)
       const results = Array.isArray(data?.results) ? data.results : [];
+      // filters out the invalid results that do not have a previewUrl or preview is not a valid url 
+      // that starts with https.
       const candidates = results.filter(
         (r) => typeof r?.previewUrl === "string" && r.previewUrl.startsWith("http")
       );
+      // if no candidates, throw an error (signals a retry)
       if (!candidates.length) throw new Error("No previewUrl results.");
-
+      // pick a random track from the candidates
       const track = pick(candidates);
+      //returns a preview url, track name, and artist name.
       return {
         previewUrl: track.previewUrl,
         trackName: track.trackName ?? "Unknown track",
         artistName: track.artistName ?? "Unknown artist",
       };
+      // we catch and retry on failure
     } catch (e) {
       logErr(`iTunes search failed attempt ${attempt}:`, e?.stack || e);
       await sleep(400);
     }
   }
+  // all attempts have failed, throw an error.
   throw new Error("Failed to get iTunes previewUrl after retries.");
 }
 
+// download a preview from iTunes to a temp file that we can play taken from a valid url.
 async function downloadToTempFile(previewUrl) {
   for (let attempt = 1; attempt <= 6; attempt++) {
     try {
@@ -176,6 +191,7 @@ async function downloadToTempFile(previewUrl) {
       if (buf.length < 25_000) throw new Error(`Preview too small (${buf.length} bytes)`);
 
       const ext = path.extname(new URL(previewUrl).pathname) || ".m4a";
+      // Create a temp file path
       const tmpPath = path.join(
         os.tmpdir(),
         `itunes_preview_${Date.now()}_${Math.random().toString(16).slice(2)}${ext}`
@@ -195,7 +211,7 @@ async function downloadToTempFile(previewUrl) {
 async function safeUnlink(p) {
   try { await fs.promises.unlink(p); } catch {}
 }
-
+// Plays a song in the vc provided by the file path
 async function playFileInVoice(guild, vc, filePath) {
   log("voice dependency report:\n" + generateDependencyReport());
 
@@ -215,7 +231,7 @@ async function playFileInVoice(guild, vc, filePath) {
 
   try {
     // fails in terminal
-    await entersState(connection, VoiceConnectionStatus.Ready, 30000);
+    await entersState(connection, VoiceConnectionStatus.Ready, 10000);
 
     const player = createAudioPlayer({
       behaviors: { noSubscriber: NoSubscriberBehavior.Stop },
@@ -257,11 +273,12 @@ export default {
     .setDescription("Downloads a random 30s preview, plays it, then does a 30s countdown."),
 
   async execute(interaction) {
+    
     const guild = interaction.guild;
     if (!guild) {
       return interaction.reply({ content: "Guild only.", flags: MessageFlags.Ephemeral });
     }
-
+    
     if (activeGuilds.has(guild.id)) {
       return interaction.reply({ content: "Already running.", flags: MessageFlags.Ephemeral });
     }
@@ -278,7 +295,12 @@ export default {
 
       const tc = findTextChannel(guild, interaction.channel);
 
-      if (tc) statusMsg = await tc.send("Downloading song...");
+      if (tc) {
+        // added rules explanation
+        await rules.execute(tc, true);
+        await sleep(20000);
+        statusMsg = await tc.send("Downloading song...");
+      } 
 
       log("starting /game");
 
@@ -294,8 +316,9 @@ export default {
 
       // countdown AFTER playback
       if (statusMsg) {
-        for (let r = 30; r >= 1; r--) {
+        for (let r = 20; r >= 1; r--) {
           await statusMsg.edit(`⏳ ${r}`);
+          // one second delay
           await sleep(1000);
         }
         // reveal track name ONLY after countdown
