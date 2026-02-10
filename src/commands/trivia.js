@@ -1,7 +1,9 @@
 // Command to start a music trivia game [VERSION .01]
 // Note: bug with the selection, once there is a selections, it should do?
 
-import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, userMention, CommandInteraction } from "discord.js";
+
+const scoreStore = require('../helpers/scoreStore.js');
 
 export default {
   data: new SlashCommandBuilder()
@@ -35,6 +37,10 @@ export default {
         .setLabel("Hard")
         .setStyle(ButtonStyle.Danger)
     );
+
+    // Add an entry in scoreStore for the user who started the game if not already there
+    user = interaction.user.tag;
+    scoreStore.addScore(user, 0);
 
     // Send difficulty selection
     await interaction.reply({
