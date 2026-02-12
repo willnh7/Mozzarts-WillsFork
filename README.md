@@ -1,7 +1,7 @@
 # Mozzarts
 
 ```
-Memebers: Will Sarmiento, David Hochberg, Jayden Elishaw, Arteen Ramezani, Khoa Vo
+Memebers: Will Sarmiento, David Hochberg, Jayden Elishaw, Arteen Ramezani, Khoa Vo, Kieran Moynihan
 ```
 
 NOTE: Some issues with slash commands on discord app, so a possible fix is the use of testing in the web browser for [discord](https://discord.com/)!
@@ -105,5 +105,6 @@ npm i -D @discordjs/rest discord-api-types
 ```  
 - Added a score tracker and a command to see the current score
 ```
+
 
 
