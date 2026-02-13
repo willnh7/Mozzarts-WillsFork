@@ -26,7 +26,7 @@ import http from "node:http";
 import zlib from "node:zlib";
 
 import { getGenre, getSession, setSession, clearSession } from "../gameState.js";
-import { resetScores, addPoints, getGuildScoresSorted } from "../helpers/scoreStore.js";
+import {  getGuildScoresSorted } from "../helpers/scoreStore.js";
 import { makeHint } from "../helpers/hintHelper.js";
 
 const VOICE_CHANNEL_NAME = "Game";
@@ -586,8 +586,9 @@ export default {
         // flowchart: Correct? -> Points displayed / Incorrect message
         if (winner.correct && winner.userId) {
           const pts = pointsFor(difficulty, ss?.hintsUsed ?? 0);
+          // TODO: This does not function 
           addPoints(guild.id, winner.userId, pts);
-
+          // No such method
           const top = getGuildScoresSorted(guild.id).slice(0, 5);
           const topLines = top.map(([uid, p], idx) => `${idx + 1}. <@${uid}> — **${p}**`).join("\n");
 
