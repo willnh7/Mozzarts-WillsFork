@@ -1,6 +1,10 @@
 import "dotenv/config";
 import { Client, GatewayIntentBits, Partials, Collection } from "discord.js";
-import path from "node:path";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import loadEvents from "./helpers/loadEvents.js";
 import loadCommands from "./helpers/loadCommands.js";

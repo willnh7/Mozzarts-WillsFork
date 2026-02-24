@@ -1,14 +1,16 @@
 {
-  "name": "memebot_discord",
+  "name": "Mozzarts",
   "version": "1.0.0",
+  "type": "module",
   "description": "this is a demo project for teaching how to build a discord bot",
   "scripts": {
     "build": "rm -rf build && esbuild src/*.js src/**/*.js --platform=node --format=cjs --outdir=build --outbase=src",
     "register": "npm run build && node -r dotenv/config build/deploy-commands.js",
-    "start": "npm run build && node -r dotenv/config build/app.js",
+    "start": "node tools/start.js",
+    "lint": "eslint .",
+    "test": "mocha \"./tests/**/*.spec.js\" --exit",
     "dev": "nodemon",
-    "prod": "node build/app.js",
-    "test": "mocha -r esbuild-runner/register ./tests/*.spec.js --exit"
+    "prod": "node build/app.js"
   },
   "keywords": [
     "discord",
@@ -19,6 +21,7 @@
   "author": "Shubham Jaiswal <@shubhamjaiswal27>",
   "license": "MIT",
   "dependencies": {
+    "22": "^0.0.0",
     "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.19.0",
     "@snazzah/davey": "^0.1.9",
@@ -30,15 +33,14 @@
   "devDependencies": {
     "@discordjs/rest": "^2.6.0",
     "@eslint/js": "^10.0.1",
-    "@eslint/json": "^1.0.0",
     "chai": "^4.3.6",
     "discord-api-types": "^0.38.38",
     "dotenv": "^16.0.2",
     "esbuild": "^0.27.2",
-    "esbuild-runner": "^2.2.1",
-    "eslint": "^10.0.0",
+    "esbuild-runner": "^2.2.2",
+    "eslint": "^10.0.2",
     "globals": "^17.3.0",
-    "mocha": "^10.0.0",
+    "mocha": "^10.8.2",
     "nodemon": "^3.1.11"
   }
 }

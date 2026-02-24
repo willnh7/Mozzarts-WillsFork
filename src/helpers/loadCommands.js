@@ -1,8 +1,11 @@
-import fs from "node:fs";
-import path from "node:path";
-import { createRequire } from "node:module";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath, pathToFileURL } from "url";
+import { createRequire } from "module";
 
-const require = createRequire(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
 function walk(dir) {
   const out = [];

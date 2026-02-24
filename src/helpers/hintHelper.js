@@ -1,16 +1,16 @@
-// Simple hint generator for music trivia tracks.
-// Previous versions had a more elaborate stage-based system; here we
-// just offer one hint per round, based on artist or title.
+// src/helpers/hintHelper.js
 
-export function makeHint(track, stage = 1, difficulty = "easy") {
-  // track is an iTunes metadata object
-  const artist = track.artistName || "unknown";
-  const title = track.trackName || "unknown";
+export function getHint(input) {
+  if (!input) return "Try a shorter title or a more common song name.";
 
-  // for now, always show first letter of the artist and title
-  // stage parameter is ignored since we only allow one hint
-  const artistChar = artist.charAt(0).toUpperCase();
-  const titleChar = title.charAt(0).toUpperCase();
+  const cleaned = String(input).trim();
+  if (cleaned.length <= 2) return "That title is very short—try a longer one.";
 
-  return `Artist starts with **${artistChar}**, title starts with **${titleChar}**`;
+  // Basic example hint: hide most characters
+  // Replace this later with your iTunes logic
+  const visible = Math.min(2, cleaned.length);
+  const masked =
+    cleaned.slice(0, visible) + "•".repeat(Math.max(0, cleaned.length - visible));
+
+  return `Starts with: ${masked}`;
 }
