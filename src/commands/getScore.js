@@ -1,11 +1,29 @@
-import * as scoreStore from "../scoreStore.js";
+import { SlashCommandBuilder } from "discord.js";
+import { getGuildScoresSorted, getTotalScore } from "../helpers/scoreStore.js";
 
 export default {
-  name: "getScore",
-  description: "Get your score",
+  data: new SlashCommandBuilder()
+    .setName("getscore")
+    .setDescription("Shows the current trivia scoreboard"),
+
   async execute(interaction) {
-    const userId = interaction.user?.id;
-    const score = scoreStore.get?.(userId) ?? 0;
-    await interaction.reply?.(`Your score is: ${score}`);
-  }
+    if (!interaction.guild) return interaction.reply({ content: "Guild only.", ephemeral: true });
+
+    const scores = getGuildScoresSorted(interaction.guild.id);
+    if (!scores.length) {
+      return interaction.reply({ content: "No scores yet. Run **/trivia** to start!", ephemeral: true });
+    }
+
+    const lines = scores.slice(0, 10).map(([uid, pts], i) => {
+      const mention = `<@${uid}>`;
+      return `${i + 1}. ${mention} — **${pts}**`;
+    });
+
+    const total = getTotalScore(interaction.guild.id);
+
+    await interaction.reply({
+      content: `🏁 **Scoreboard (Top 10)**\n${lines.join("\n")}\n\nTotal points: **${total}**`,
+      ephemeral: false,
+    });
+  },
 };
