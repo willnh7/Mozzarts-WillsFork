@@ -13,7 +13,6 @@ export default {
     ),
 
   async execute(interaction) {
-    //let userId = interaction.options.getUser("user_name")?.user.id || interaction.user.id;
     let userId = interaction.options.getUser("user_name")?.id || interaction.user.id;
     let username = interaction.options.getUser("user_name")?.username || interaction.user.username;
     const allTimeScore = scoreStore.getUserAllTimePoints(interaction.guild.id, userId);

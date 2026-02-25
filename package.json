@@ -29,11 +29,15 @@
   },
   "devDependencies": {
     "@discordjs/rest": "^2.6.0",
+    "@eslint/js": "^9.39.2",
     "chai": "^4.3.6",
     "discord-api-types": "^0.38.38",
     "dotenv": "^16.0.2",
     "esbuild": "^0.27.2",
     "esbuild-runner": "^2.2.1",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.3.0",
     "mocha": "^10.0.0",
     "nodemon": "^3.1.11"
   }
