@@ -6,7 +6,7 @@
 import {EmbedBuilder} from "discord.js";
 // Allows for the path of the rules.json to be used for ease of changing the rules
 // A helper for the rules
-import {getRules} from "../helpers/rules.js";
+import {getRules} from "../helpers/rulesHelper.js";
 
 export default {
     name: "rules",
