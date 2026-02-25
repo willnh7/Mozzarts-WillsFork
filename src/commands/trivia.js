@@ -23,7 +23,7 @@ import fs from "node:fs";
 import { getGenre, getSession, setSession, clearSession } from "../gameState.js";
 import { resetScores, addPoints, getGuildScoresSorted } from "../helpers/scoreStore.js";
 import { makeHint } from "../helpers/hintHelper.js";
-import { makeSongQuestion, createTriviaQuestion, createResultEmbed } from "../helpers/trivia.js";
+import { makeSongQuestion, createTriviaQuestion, createResultEmbed } from "../helpers/triviaHelper.js";
 import { getRandomItunesTrack, downloadPreview } from "../helpers/itunes.js";
 
 const VOICE_CHANNEL_NAME = "Game";
