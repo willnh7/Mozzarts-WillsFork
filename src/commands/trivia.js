@@ -26,7 +26,7 @@ import http from "node:http";
 import zlib from "node:zlib";
 
 import { getGenre, getSession, setSession, clearSession } from "../gameState.js";
-import { resetScores, addPoints, getGuildScoresSorted } from "../scoreStore.js";
+import { resetScores, addPoints, getGuildScoresSorted } from "../helpers/scoreStore.js";
 import { makeHint } from "../helpers/hintHelper.js";
 
 const VOICE_CHANNEL_NAME = "Game";
@@ -516,11 +516,15 @@ export default {
           }
         });
 
+        // Constantly scan for messages until time is up or a correct guess
         const winner = await new Promise((resolve) => {
           const msgCollector = tc.createMessageCollector({
             time: 30000,
             filter: (m) => !m.author.bot && m.content && m.channelId === tc.id,
           });
+
+          let wasCorrect = false;
+          let correctUserId = null;
 
           msgCollector.on("collect", (m) => {
             if (skipped) return;
@@ -529,12 +533,13 @@ export default {
             if (!ss?.active || !ss.currentTrack) return;
 
             if (isCorrectGuess(m.content, ss.currentTrack, ss.difficulty)) {
+              wasCorrect = true;
+              correctUserId = m.author.id;
               msgCollector.stop("correct");
-              resolve({ correct: true, userId: m.author.id });
             }
           });
 
-          msgCollector.on("end", () => resolve({ correct: false, userId: null }));
+          msgCollector.on("end", () => resolve({ correct: wasCorrect, userId: correctUserId }));
         });
 
         componentCollector.stop("round_done");
@@ -550,6 +555,7 @@ export default {
         const ss = getSession(guild.id);
         const answerLine = `✅ **${track.trackName}** — **${track.artistName}**`;
 
+        // If someone guessed correct, reward them. Otherwise, print failure message and move on
         // flowchart: Correct? -> Points displayed / Incorrect message
         if (winner.correct && winner.userId) {
           const pts = pointsFor(difficulty, ss?.hintsUsed ?? 0);

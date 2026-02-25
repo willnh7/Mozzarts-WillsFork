@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { getGuildScoresSorted, getTotalScore } from "../scoreStore.js";
+import { getGuildScoresSorted, getTotalScore } from "../helpers/scoreStore.js";
 
 export default {
   data: new SlashCommandBuilder()
