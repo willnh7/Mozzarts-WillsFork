@@ -22,6 +22,7 @@ import fs from "node:fs";
 
 import { getGenre, getSession, setSession, clearSession } from "../gameState.js";
 import { resetScores, addPoints, getGuildScoresSorted } from "../helpers/scoreStore.js";
+import { addRoundPlayed, addRoundWon, addGamePlayed, addGameWon } from "../helpers/statsStore.js";
 import { makeHint } from "../helpers/hintHelper.js";
 import { makeSongQuestion, createTriviaQuestion, createResultEmbed } from "../helpers/triviaHelper.js";
 import { getRandomItunesTrack, downloadPreview } from "../helpers/itunes.js";
@@ -337,6 +338,8 @@ export default {
       // We keep the connection and player in variables that can be accessed and used throughout the game.
       connection = voice.connection;
       player = voice.player;
+      // Keep track of every user who has wrote an answer so their games played stat can be updated
+      const playersAcrossAllRounds = new Set();
       // The 10 rounds are here, this is the core gameplay loop where we play previews, collect answer, and manage the state for each round.
       // TODO: Add a way to break out of the loop early if there are no players or if the admin wants to end the game early.(Maybe even user who invoked it too?)
       for (let round = 1; round <= 10; round++) {
@@ -495,10 +498,12 @@ export default {
             }
             // we add the user to a set of users who already answered to prevent multiple tries
             answeredUsers.add(i.user.id);
+            playersAcrossAllRounds.add(i.user.id);
+            addRoundPlayed(guild.id, i.user.id); // increase their rounds played stat
             // determine which answer they selected based on the customID of the button they clicked and check if correct
             const idx = parseInt(i.customId.replace("trivia_answer_", ""), 10);
             const selected = question.options[idx];
-            if (selected === question.correctAnswer) {
+            if (selected === question.correctAnswer) { // if their answer was correct
               winner = { correct: true, userId: i.user.id };
               clearInterval(timerInterval);
 
@@ -636,6 +641,7 @@ export default {
             if (winner.correct && winner.userId) {
               const pts = pointsFor(difficulty);
               addPoints(guild.id, winner.userId, pts);
+              addRoundWon(guild.id, winner.userId); // increase their rounds won stat
               const top = getGuildScoresSorted(guild.id).slice(0, 5);
               const topLines = top.map(([uid, p], idx) => `${idx + 1}. <@${uid}> — **${p}**`).join("\n");
 
@@ -673,11 +679,17 @@ export default {
 
       // flowchart: Answered 10 questions? -> end
       // Handles the end of the game logic by getting the final scores, 
-      // displaying the final leaderboard, and cleaning up the session and connection
+      // displaying the final leaderboard, cleaning up the session and connection, 
+      // and updating stats for all who played'
+      for(const userId of playersAcrossAllRounds) {
+        addGamePlayed(guild.id, userId); // increase their games played stat
+      }
       const final = getGuildScoresSorted(guild.id);
       if (!final.length) {
         await tc.send("🏁 Game over! No points scored.");
       } else {
+        const highestScorer = final[0];
+        addGameWon(guild.id, highestScorer[0]); // increase their games won stat
         const lines = final.slice(0, 10).map(([uid, pts], i) => `${i + 1}. <@${uid}> — **${pts}**`);
         await tc.send(`🏁 **Game over! Final scoreboard:**\n${lines.join("\n")}`);
       }

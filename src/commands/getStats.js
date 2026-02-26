@@ -1,13 +1,13 @@
 // Admin command to get the score of any player
 import { PermissionsBitField, SlashCommandBuilder } from "discord.js";
-import { getUserPoints, getUserAllTimePoints } from "../helpers/scoreStore.js";
+import { getRoundsPlayed, getRoundsWon, getGamesPlayed, getGamesWon } from "../helpers/statsStore.js";
 
 export default {
   data: new SlashCommandBuilder()
-    .setName("getscore")
-    .setDescription("Shows the score of a specific user")
+    .setName("getstats")
+    .setDescription("Shows the stats of a specific user")
     .addUserOption((option) =>
-      option.setName("user").setDescription("The user to get the score for").setRequired(true)
+      option.setName("user").setDescription("The user to get the stats for").setRequired(true)
     ),
 
     // Run the command
@@ -33,12 +33,14 @@ export default {
     const userId = interaction.options.getUser("user").id;
     const username = interaction.options.getUser("user").username;
 
-    // Get scores for that user
-    const score = getUserPoints(guildId, userId);
-    const allTimeScore = getUserAllTimePoints(guildId, userId);
+    // Get stats for that user
+    const roundsPlayed = getRoundsPlayed(guildId, userId);
+    const roundsWon = getRoundsWon(guildId, userId);
+    const gamesPlayed = getGamesPlayed(guildId, userId);
+    const gamesWon = getGamesWon(guildId, userId);;
 
     await interaction.reply({
-      content: `${username}'s scores:\nCurrent score: ${score}\nLifetime score: ${allTimeScore}`,
+      content: `${username}'s stats:\nRounds played: ${roundsPlayed}\nRounds won: ${roundsWon}\nGames played: ${gamesPlayed}\nGames won: ${gamesWon}`,
       ephemeral: true,
     });
   },
