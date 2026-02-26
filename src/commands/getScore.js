@@ -1,29 +1,52 @@
-import { SlashCommandBuilder } from "discord.js";
-import { getGuildScoresSorted, getTotalScore } from "../helpers/scoreStore.js";
+// Admin command to get the score of any player
+import { PermissionsBitField, SlashCommandBuilder } from "discord.js";
+import { getUserPoints, getUserAllTimePoints } from "../helpers/scoreStore.js";
+import { all } from "axios";
 
 export default {
   data: new SlashCommandBuilder()
     .setName("getscore")
-    .setDescription("Shows the current trivia scoreboard"),
+    .setDescription("Shows the score of a specific user")
+    .addUserOption((option) =>
+      option.setName("user").setDescription("The user to get the score for").setRequired(true)
+    ),
 
+    // Run the command
   async execute(interaction) {
-    if (!interaction.guild) return interaction.reply({ content: "Guild only.", ephemeral: true });
-
-    const scores = getGuildScoresSorted(interaction.guild.id);
-    if (!scores.length) {
-      return interaction.reply({ content: "No scores yet. Run **/trivia** to start!", ephemeral: true });
+    // Make sure they are an admin
+    const member = interaction.member;
+    if(!member.permissions.has(PermissionsBitField.Flags.Administrator)){
+        return interaction.reply({
+            content: "You must be a server administrator to use this command.",
+            ephemeral: true,
+        })
     }
 
-    const lines = scores.slice(0, 10).map(([uid, pts], i) => {
-      const mention = `<@${uid}>`;
-      return `${i + 1}. ${mention} — **${pts}**`;
-    });
+    if (!interaction.guild) {
+      return interaction.reply({
+        content: "This command can only be used in a server.",
+        ephemeral: true,
+      });
+    }
 
-    const total = getTotalScore(interaction.guild.id);
+    const guildId = interaction.guild.id;
+    const userId = interaction.options.getUser("user").id;
+    const username = interaction.options.getUser("user").username;
+
+    const allTimeScore = getUserAllTimePoints(guildId, userId);
+
+    if(allTimeScore === 0){
+      return interaction.reply({
+        content: `${username} has never played before, so they have no score.`,
+        ephemeral: true,
+      });
+    }
+
+    const score = getUserPoints(guildId, userId);
 
     await interaction.reply({
-      content: `🏁 **Scoreboard (Top 10)**\n${lines.join("\n")}\n\nTotal points: **${total}**`,
-      ephemeral: false,
+      content: `${username}'s scores\nCurrent score: ${score}\nLifetime score: ${allTimeScore}`,
+      ephemeral: true,
     });
   },
 };
