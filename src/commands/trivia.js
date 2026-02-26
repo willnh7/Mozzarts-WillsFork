@@ -58,33 +58,6 @@ function findTextChannel(guild, fallbackChannel) {
     }) ?? null;
   return tc ?? fallbackChannel ?? null;
 }
-// TODO: CUT, we are doing multiple choice so we don't need it now.
-/**
- * Normalizes the input string by converting it to lowercase, removing parenthetical content, stripping punctuation, and collapsing whitespace.
- * @param {*} s 
- * @returns a normalized version of the input string that is simplified for easier matching of user guesses.
- */
-function normalize(s) {
-  return String(s ?? "")
-    .toLowerCase()
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/[\u2019']/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-//TODO: CUT, used for inputted guesses but we are doing multiple choices.
-/**
- * Strips the title down to various simplified forms to allow for more flexible matching of user guesses.
- * @param {*} title 
- * @returns an array of title variants w/ different levels of stripping to allow for more flexible matching 
- */
-function stripTitleVariants(title) {
-  const t = String(title ?? "");
-  const noParens = t.replace(/\s*\([^)]*\)\s*/g, " ").trim();
-  const noDash = noParens.replace(/\s*-\s*.*$/g, "").trim();
-  return [t, noParens, noDash].filter(Boolean);
-}
 /**
  * This function attempts to delete the file at the given path, but catches and logs any errors that occur during deletion.
  * Used to clean up temp files.
@@ -186,41 +159,13 @@ function pointsFor(difficulty, hintsUsed) {
   // scoring is based solely on difficulty; hints no longer exist
   return difficulty === "easy" ? 1 : difficulty === "medium" ? 2 : 3;
 }
-//TODO: CUT, never used at all
-/**
- * This function checks if the user guessed correctly based on the message content, the 
- * @param {*} msgContent 
- * @param {*} track 
- * @param {*} difficulty 
- * @returns 
- */
-function isCorrectGuess(msgContent, track, difficulty) {
-  const guess = normalize(msgContent);
-
-  const titleVariants = stripTitleVariants(track.trackName).map(normalize).filter(Boolean);
-  const artistNorm = normalize(track.artistName);
-
-  const titleHit = titleVariants.some(v => v && (guess === v || guess.includes(v)));
-  const artistHit = artistNorm && (guess === artistNorm || guess.includes(artistNorm));
-
-  // Difficulty tuning:
-  // Easy: title OR artist
-  // Medium: title
-  // Hard: title AND artist
-  if (difficulty === "easy") return titleHit || artistHit;
-  if (difficulty === "medium") return titleHit;
-  return titleHit && artistHit;
-}
-
 /**
  * This export is used only for internal testing of the question normalization
  * and scoring logic, which are not directly invoked by the command handler and thus not easily testable.
  */
 export const _test = {
-  normalize,
   pointsFor,
 };
-
 /**
  * This is the main command export in which the user can invoke to run
  * a game of trivia. The command handler manages the whole gameplay flow, including:
