@@ -579,7 +579,7 @@ export default {
             if (!freezeActive) {
               startTimer();
               componentCollector.resetTimer({ time: 15000 });
-}
+            }
           }
 
           // Handles the hint button logic only allowing the user to use it once
