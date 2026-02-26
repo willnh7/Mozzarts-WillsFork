@@ -107,7 +107,6 @@ npm i -D @discordjs/rest discord-api-types
 ```
 
 > # Version 2.0.0
-> ### Maintenance update
 ### ArteenR Changes:
 ```
 - Enforced 15‑second answer window after each preview; unanswered rounds end
@@ -123,6 +122,22 @@ npm i -D @discordjs/rest discord-api-types
 - Questions are all relevant to the song being played
 - Ensured a round only moves on after the previous round is over
 - Cleaned up Gameplay loop
+```
+
+> # Version 2.0.1
+> ### Maintenance update
+### ArteenR Changes:
+```
+- Multiple-choice questions now strictly respect the selected difficulty;
+  easy rounds only ask about artist/genre, medium about album/title, hard
+  about release year.  This prevents irrelevant answer options.
+- Hints are generated based on the actual question type instead of always
+  showing artist/title initials; the API now supports `track`,`artist`,`genre`,
+  `album`, and `year` hints.
+- Added `/terminate` slash command (admin only) which immediately ends a
+  running trivia game and announces the termination to the channel.
+- Added tests covering the new hint logic, and difficulty constraints.
+- Updated normalization utility used in tests to collapse extra whitespace.
 ```
 
 

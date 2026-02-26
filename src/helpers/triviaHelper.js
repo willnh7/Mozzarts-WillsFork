@@ -175,5 +175,9 @@ export async function makeSongQuestion(track, difficulty = "easy", otherTrackPro
     question: choice.label,
     correctAnswer: correct,
     options,
+    // expose the type so hint logic (and tests) can keep in sync with the
+    // question that was generated.  callers may ignore this if they don't
+    // care.
+    type: choice.id,
   };
 }

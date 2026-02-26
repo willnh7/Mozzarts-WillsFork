@@ -163,8 +163,21 @@ function pointsFor(difficulty, hintsUsed) {
  * This export is used only for internal testing of the question normalization
  * and scoring logic, which are not directly invoked by the command handler and thus not easily testable.
  */
+// utility used by tests; not part of the command logic itself
+function normalize(str) {
+  // strip parentheses and their contents, punctuation, collapse spaces,
+  // and lowercase.  the tests expect "song abc" not "song  abc".
+  return String(str)
+    .replace(/\([^\)]*\)/g, "") // remove parentheses content
+    .replace(/[\p{P}$+<=>^`|~]/gu, "") // remove most punctuation via Unicode property
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 export const _test = {
   pointsFor,
+  normalize,
 };
 /**
  * This is the main command export in which the user can invoke to run
@@ -327,6 +340,12 @@ export default {
       // TODO: Add a way to break out of the loop early if there are no players or if the admin wants to end the game early.(Maybe even user who invoked it too?)
       for (let round = 1; round <= 10; round++) {
         const s = getSession(guild.id);
+        // check for an administrator-initiated termination first so we can
+        // deliver a channel-wide notification before abandoning the loop.
+        if (s?.terminated) {
+          await tc.send(`❌ Game terminated by administrator.`);
+          break;
+        }
         if (!s?.active) break;
 
         // flowchart: Prepare next song + ensure still in VC
@@ -557,7 +576,10 @@ export default {
             }
             hintUsed = true;
             await i.deferUpdate();
-            const hint = makeHint(track, 1, difficulty);
+            // question.type was added to the object returned by makeSongQuestion
+            // so we can generate a hint that actually matches the form of the
+            // current question rather than just guessing based on difficulty.
+            const hint = makeHint(track, question.type);
             await tc.send({ content: `💡 Hint: ${hint}`, ephemeral: true });
             // disable the hint button
             try {
