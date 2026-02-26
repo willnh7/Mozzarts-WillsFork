@@ -25,6 +25,7 @@ import { resetScores, addPoints, getGuildScoresSorted } from "../helpers/scoreSt
 import { makeHint } from "../helpers/hintHelper.js";
 import { makeSongQuestion, createTriviaQuestion, createResultEmbed } from "../helpers/triviaHelper.js";
 import { getRandomItunesTrack, downloadPreview } from "../helpers/itunes.js";
+import { consumeFreeze } from "./powerup.js";
 
 const VOICE_CHANNEL_NAME = "Game";
 const TEXT_CHANNEL_NAME = "game";
@@ -440,8 +441,19 @@ export default {
         let winner = { correct: false, userId: null };
         const answeredUsers = new Set();
 
-        // Creates a collector for the answer and control buttons
-        const componentCollector = roundMsg.createMessageComponentCollector({ time: 15000 });
+        const freezeActive = consumeFreeze(guild.id, interaction.user.id);
+        //activate freeze 
+        if (freezeActive) {
+          await tc.send(`❄️ Freeze Time activated! No timer this round.`);
+        }
+
+        const collectorOptions = {};
+        if (!freezeActive) {
+          collectorOptions.time = 15000;
+          
+        }
+
+        const componentCollector = roundMsg.createMessageComponentCollector(collectorOptions);
 
         // visual timer
         //
@@ -469,7 +481,9 @@ export default {
             }
           }, 1000);
         }
-        startTimer();
+        if (!freezeActive) {
+          startTimer();
+        }
 
         // when we restart via replay we will reset this collector’s timer
         componentCollector.on("collect", async (i) => {
@@ -553,7 +567,7 @@ export default {
                 player.play(resource);
                 const stopper = setTimeout(() => {
                   try { player.stop(true); } catch (err) { console.err("Playback err occurred:", err);}
-                }, 32000);
+                }, 30000);
                 await new Promise((resolve) =>
                   player.once(AudioPlayerStatus.Idle, resolve)
                 );
@@ -562,10 +576,10 @@ export default {
                 console.err("Replay failed:", err);
               }
             })();
-            // Calls start timer to reset the time for the round
-            startTimer();
-            componentCollector.resetTimer({ time: 15000 });
-            return;
+            if (!freezeActive) {
+              startTimer();
+              componentCollector.resetTimer({ time: 15000 });
+            }
           }
 
           // Handles the hint button logic only allowing the user to use it once
