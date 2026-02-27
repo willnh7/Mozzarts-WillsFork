@@ -139,6 +139,12 @@ npm i -D @discordjs/rest discord-api-types
 - Added tests covering the new hint logic, and difficulty constraints.
 - Updated normalization utility used in tests to collapse extra whitespace.
 ```
+### Jayden Changes:
+```
+- /terminate now requires admin permission +stops timers/collectors instantly
+- Added a full regression suite
+(Details in v2.0.1 release)
+```
 
 
 
