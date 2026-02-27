@@ -141,10 +141,11 @@ npm i -D @discordjs/rest discord-api-types
 ```
 ### Jayden Changes:
 ```
-- /terminate now requires admin permission +stops timers/collectors instantly
+- /terminate now requires admin permission + stops timers/collectors instantly
 - Added a full regression suite
 (Details in v2.0.1 release)
 ```
+
 
 
 
