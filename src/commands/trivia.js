@@ -210,7 +210,7 @@ export default {
     const embed = new EmbedBuilder()
       .setColor(0x1db954)
       .setTitle("🎵 Music Trivia")
-      .setDescription(`Select a difficulty to begin (10 questions). You’ll hear a 30s preview and then have 15 seconds to answer each multiple-choice question. A replay button allows one additional listen per song. A hint button provides a single clue per round.`)
+      .setDescription(`Select a difficulty to begin (10 questions). You’ll hear a 30s preview and then have 15 seconds to answer each multiple-choice question. A replay button allows one additional listen per song. A hint button provides a single clue per round, no hints for Hard difficulty.`)
       .addFields(
         { name: "Easy", value: "1 point • artist or genre questions", inline: true },
         { name: "Medium", value: "2 points • album or track-title questions", inline: true },
@@ -313,7 +313,7 @@ export default {
       `✅ You’ll hear **30s** of a song preview.\n` +
       `💬 After the preview ends you’ll have **15 seconds** to answer using the multiple-choice buttons in <#${tc.id}>.\n` +
       `🔁 A replay button lets you hear the song one more time; using it restarts the timer (only once per round).\n` +
-      `💡 A hint button provides one clue per round.\n`
+      `💡 A hint button provides one clue per round, no hints for Hard difficulty.\n`
     );
 
     // flowchart: User in Game channel? (loop)
@@ -411,6 +411,7 @@ export default {
         const { embed: questionEmbed, actionRow: answerRow } = createTriviaQuestion(question);
 
         // question row plus control row (replay button)
+        // For hard difficulty, disable the hint button since no hints are allowed
         const controlRow = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
             .setCustomId("trivia_replay")
@@ -421,7 +422,7 @@ export default {
             .setCustomId("trivia_hint")
             .setLabel("Hint")
             .setStyle(ButtonStyle.Secondary)
-            .setDisabled(false)
+            .setDisabled(difficulty === "hard")
         );
 
         // when you are given answer choices and buttons
@@ -454,6 +455,11 @@ export default {
         }
 
         const componentCollector = roundMsg.createMessageComponentCollector(collectorOptions);
+
+        // keep a reference in session so /terminate can stop the current round
+        const ssForCollector = getSession(guild.id) || {};
+        ssForCollector.currentCollector = componentCollector;
+        setSession(guild.id, ssForCollector);
 
         // visual timer
         //
@@ -584,6 +590,11 @@ export default {
 
           // Handles the hint button logic only allowing the user to use it once
           if (i.customId === "trivia_hint") {
+            // hints are not allowed for hard difficulty
+            if (difficulty === "hard") {
+              await i.reply({ content: "Hints are not allowed for hard difficulty.", ephemeral: true });
+              return;
+            }
             if (hintUsed) {
               await i.reply({ content: "Hint already used this round.", ephemeral: true });
               return;
@@ -613,7 +624,25 @@ export default {
 
         // wrap the end handler in a promise so the outer loop can await it
         const endPromise = new Promise((resolve) => {
-          componentCollector.on("end", async () => {
+          componentCollector.on("end", async (collected, reason) => {
+            // remove collector reference from session
+            const ssClear = getSession(guild.id);
+            if (ssClear) {
+              delete ssClear.currentCollector;
+              setSession(guild.id, ssClear);
+            }
+
+            // if termination triggered the stop, bail out immediately
+            if (reason === "terminated") {
+              try {
+                await tc.send(`❌ Game terminated by administrator.`);
+              } catch {}
+              // wipe session so the outer loop doesn't post another message
+              clearSession(guild.id);
+              resolve();
+              return;
+            }
+
             // when round ends highlight correct answer if nobody already chose it
             try {
               const highlighted = ActionRowBuilder.from(answerRow).setComponents(
