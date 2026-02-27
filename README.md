@@ -139,7 +139,20 @@ npm i -D @discordjs/rest discord-api-types
 - Added tests covering the new hint logic, and difficulty constraints.
 - Updated normalization utility used in tests to collapse extra whitespace.
 ```
-
+### Jayden Changes:
+```
+- /terminate now requires admin permission + stops timers/collectors instantly
+- Added a full regression suite
+(Details in v2.0.1 release)
+```
+### David Hochberg Changes:
+```
+- Added tracking of player stats including rounds played/won and games played/won
+  - Players can use /stats to check their stats
+  - Admins can use /getstats <user> to check that user's stats
+- Changed the name of the /getscore command to /leaderboard
+- The new /getscore is now an admin command to get the score of any player
+```
 
 
 

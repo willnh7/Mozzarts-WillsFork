@@ -2,7 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 
-const require = createRequire(__filename);
+// Avoid import.meta entirely so CJS builds don't warn.
+// Works in:
+// - tests (ESM): __filename undefined -> uses absolute path fallback
+// - build output (CJS): __filename defined -> uses it
+const require = createRequire(
+  (typeof __filename === "string" && __filename) ||
+    path.resolve(process.cwd(), "package.json")
+);
 
 function walk(dir) {
   const out = [];

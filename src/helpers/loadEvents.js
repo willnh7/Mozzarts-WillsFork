@@ -2,7 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 
-const require = createRequire(__filename);
+const require = createRequire(
+  (typeof __filename === "string" && __filename) ||
+    path.resolve(process.cwd(), "package.json")
+);
 
 function walk(dir) {
   const out = [];
