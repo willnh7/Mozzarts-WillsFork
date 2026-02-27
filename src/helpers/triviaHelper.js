@@ -26,7 +26,7 @@ export function createTriviaQuestion(question) {
     )
     .setFooter({ text: "Click the button with the correct answer!" });
 
-  // Create buttons for each answer option.  Use the option index in the
+  // Create buttons for each answer option. Use the option index in the
   // customId rather than the full text to avoid length limits and encoding
   // problems; the handler will look up the answer in the question object.
   const buttons = question.options.map((option, idx) => {
@@ -78,17 +78,10 @@ export function getTriviaQuestion(difficulty = null) {
 }
 
 /**
- * Build a multiple‑choice question for a specific iTunes track.  The question
- * text is chosen randomly from a set of templates (album/artist/genre/year)
- * and the wrong answers are pulled from other tracks fetched via the iTunes
- * API.  This is how we guarantee that every question is tied to the currently
- * playing song.
- *
- * @param {object} track - track metadata returned by getRandomItunesTrack
- * @param {string} difficulty - 'easy'|'medium'|'hard' (affects scoring and
- *                              which question types are allowed)
- * @returns {Promise<object>} problem object with fields suitable for
- *                            createTriviaQuestion()
+ * Build a multiple-choice question for a specific iTunes track.
+ * @param {object} track
+ * @param {string} difficulty
+ * @returns {Promise<object>}
  */
 export async function makeSongQuestion(track, difficulty = "easy", otherTrackProvider = getRandomItunesTrack) {
   const TYPES = [
@@ -101,7 +94,8 @@ export async function makeSongQuestion(track, difficulty = "easy", otherTrackPro
       getter: (t) => {
         try {
           const d = new Date(t.releaseDate);
-          return Number.isFinite(d.getFullYear()) ? String(d.getFullYear()) : null;
+          if (Number.isNaN(d.getTime())) return null;
+          return String(d.getFullYear());
         } catch {
           return null;
         }
@@ -110,8 +104,7 @@ export async function makeSongQuestion(track, difficulty = "easy", otherTrackPro
     { id: "title", label: "What is the name of this song?", getter: (t) => t.trackName },
   ];
 
-  // restrict question pool by difficulty: easy gets simpler metadata, medium
-  // targets album/title, hard goes for year (the toughest to know).
+  // restrict question pool by difficulty
   let available;
   if (difficulty === "easy") {
     available = TYPES.filter((t) => ["artist", "genre"].includes(t.id));
@@ -120,7 +113,6 @@ export async function makeSongQuestion(track, difficulty = "easy", otherTrackPro
   } else {
     available = TYPES.filter((t) => ["year"].includes(t.id));
   }
-  // if filtering somehow removed everything, fall back to all types
   if (!available.length) available = TYPES.slice();
 
   // pick a type that actually has a valid value in the track
@@ -134,23 +126,22 @@ export async function makeSongQuestion(track, difficulty = "easy", otherTrackPro
   }
 
   if (!correct) {
-    // last‑ditch fallback to track name itself
+    // last-ditch fallback to track name itself
     choice = { id: "title", label: "What is the name of this song?", getter: (t) => t.trackName };
     correct = choice.getter(track) || "Unknown";
   }
 
-  // gather up to three wrong answers from other tracks.  the provider may
-  // return duplicates (e.g. during testing) so we cap the number of attempts
-  // to avoid getting stuck.
+  // gather up to three wrong answers from other tracks
   const wrongs = new Set();
   const genre = track.primaryGenreName || null;
   let attempts = 0;
+
   while (wrongs.size < 3 && attempts < 30) {
     attempts += 1;
     try {
       const other = await otherTrackProvider(genre);
       const val = choice.getter(other);
-      if (val && val !== correct) {
+      if (val && val !== "" && val !== correct) {
         wrongs.add(val);
       }
     } catch {
@@ -158,11 +149,18 @@ export async function makeSongQuestion(track, difficulty = "easy", otherTrackPro
     }
   }
 
-  // if we still don't have enough distractors, pad with generic fillers
-  const fillers = ["Unknown", "N/A", "Other"];
-  for (let i = wrongs.size; i < 3; i++) wrongs.add(fillers[i] || `Choice ${i + 1}`);
+  // ✅ FIX: pad until we truly have 3 unique wrong answers
+  const fillers = ["Unknown", "N/A", "Other", "Choice A", "Choice B", "Choice C", "Choice D"];
+  let fi = 0;
+  while (wrongs.size < 3) {
+    const f = fillers[fi] ?? `Choice ${fi + 1}`;
+    fi += 1;
+    if (f && f !== correct) wrongs.add(f);
+    if (fi > 50) break; // ultra-safety
+  }
 
-  const options = [correct, ...Array.from(wrongs)];
+  const options = [correct, ...Array.from(wrongs).slice(0, 3)];
+
   // shuffle
   for (let i = options.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -175,9 +173,6 @@ export async function makeSongQuestion(track, difficulty = "easy", otherTrackPro
     question: choice.label,
     correctAnswer: correct,
     options,
-    // expose the type so hint logic (and tests) can keep in sync with the
-    // question that was generated.  callers may ignore this if they don't
-    // care.
     type: choice.id,
   };
 }
