@@ -153,6 +153,14 @@ npm i -D @discordjs/rest discord-api-types
 - Changed the name of the /getscore command to /leaderboard
 - The new /getscore is now an admin command to get the score of any player
 ```
+### Will Sarmiento Changes:
+```
+- Added a powerup double points
+- Documented the trivia.js file
+- Removed outdated functions and files
+
+```
+
 
 
 
