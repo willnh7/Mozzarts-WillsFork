@@ -8,7 +8,6 @@ function getGuildStore(guildId) {
   }
   return powerups.get(guildId);
 }
-
 //Checks if user has a freeze powerup.
 export function consumeFreeze(guildId, userId) {
   const guildStore = powerups.get(guildId);
@@ -21,15 +20,26 @@ export function consumeFreeze(guildId, userId) {
 
   return false;
 }
+// Checks if the user has the double points powerup and consumes it if they do.
+export function consumeDoublePoints(guildId, userId) {
+  const guildStore = powerups.get(guildId);
+  if (guildStore?.[userId]?.doublePoints) {
+    guildStore[userId].doublePoints = false; // Use it up
+    return true;
+  }
+  return false;
+}
 
 export default {
   data: new SlashCommandBuilder()
     .setName("powerup")
-    .setDescription("Give yourself a Freeze Time powerup (removes timer for one round)"),
+    .setDescription("Give yourself a random powerup for the next round"),
 
   async execute(interaction) {
-    if (!interaction.guild) {
-      return interaction.reply({
+   
+    await interaction.deferReply({ephemeral: true});
+     if (!interaction.guild) {
+      return interaction.editReply({
         content: "Guild only command.",
         ephemeral: true,
       });
@@ -37,24 +47,39 @@ export default {
 
     const guildId = interaction.guild.id;
     const userId = interaction.user.id;
-
     const guildStore = getGuildStore(guildId);
+    const options = ["freeze", "doublePoints"];
 
+    // For randomly getting a powerup from the powerup options
+    const randPowerup = options[Math.floor(Math.random() * options.length)]
     // Prevent stacking infinite freezes
-    if (guildStore[userId]?.freeze) {
-      return interaction.reply({
+    if( randPowerup == "freeze") {
+      if (guildStore[userId]?.freeze) {
+      return interaction.editReply({
         content: "❄️ You already have a Freeze Time powerup!",
-        ephemeral: true,
       });
+      } else {
+        guildStore[userId] = { ...guildStore[userId], freeze: true };
+        await interaction.editReply({
+          content:
+            "❄️ You received a **Freeze Time** powerup!\n" +
+            "It will remove the timer for one round",
+        });
+      }
+    } else if(randPowerup == "doublePoints") {
+      // Prevent stacking infinite doublePoints
+      if (guildStore[userId]?.doublePoints) {
+        return interaction.editReply({
+          content: "💰 You already have a Double Points powerup!",
+        });
+      } else {
+        guildStore[userId] = { ...guildStore[userId], doublePoints: true };
+        await interaction.editReply({
+          content:
+            "💰 You received a **Double Points** powerup!\n" +
+            "It will double your points for one round",
+        });
+      }
     }
-
-    guildStore[userId] = { freeze: true };
-
-    await interaction.reply({
-      content:
-        "❄️ You received a **Freeze Time** powerup!\n" +
-        "It will remove the timer for one round",
-      ephemeral: true,
-    });
   },
 };

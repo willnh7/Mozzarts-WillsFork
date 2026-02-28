@@ -25,7 +25,7 @@ import { resetScores, addPoints, getGuildScoresSorted } from "../helpers/scoreSt
 import { makeHint } from "../helpers/hintHelper.js";
 import { makeSongQuestion, createTriviaQuestion, createResultEmbed } from "../helpers/triviaHelper.js";
 import { getRandomItunesTrack, downloadPreview } from "../helpers/itunes.js";
-import { consumeFreeze } from "./powerup.js";
+import { consumeFreeze , consumeDoublePoints} from "./powerup.js";
 
 const VOICE_CHANNEL_NAME = "Game";
 const TEXT_CHANNEL_NAME = "game";
@@ -404,6 +404,7 @@ export default {
         }
 
         const question = await makeSongQuestion(track, difficulty);
+        
         const { embed: questionEmbed, actionRow: answerRow } = createTriviaQuestion(question);
 
         // question row plus control row (replay button)
@@ -442,6 +443,10 @@ export default {
         if (freezeActive) {
           await tc.send(`❄️ Freeze Time activated! No timer this round.`);
         }
+        const doublePtsActive = consumeDoublePoints(guild.id, interaction.user.id);
+        if(doublePtsActive) {
+          await tc.send(`💰 **Double Points** activated! You will earn **${question.points * 2}** points if you guess right!`);
+        }
 
         const collectorOptions = {};
         if (!freezeActive) {
@@ -462,7 +467,7 @@ export default {
         function startTimer() {
           clearInterval(timerInterval);
           timeLeft = 15;
-
+          // This is the countdown for the timer
           timerInterval = setInterval(async () => {
             if (timeLeft <= 0) return;
             timeLeft--;
@@ -698,7 +703,13 @@ export default {
             const answerLine = `✅ **${track.trackName}** — **${track.artistName}**`;
 
             if (winner.correct && winner.userId) {
-              const pts = pointsFor(difficulty);
+              let pts = pointsFor(difficulty);
+              
+              if(doublePtsActive) {
+                pts *= 2;
+                // Changes the question points to display the double points gained
+                question.points *= 2;
+              }
               addPoints(guild.id, winner.userId, pts);
 
               const top = getGuildScoresSorted(guild.id).slice(0, 5);
