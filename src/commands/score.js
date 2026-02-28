@@ -14,14 +14,16 @@ export default {
       });
     }
 
+    // Get user info
     const guildId = interaction.guild.id;
     const userId = interaction.user.id;
 
+    // Get stats for that user
     const score = getUserPoints(guildId, userId);
     const allTimeScore = getUserAllTimePoints(guildId, userId);
 
     await interaction.reply({
-      content: `Your current score: ${score}\nLifetime score: ${allTimeScore}`,
+      content: `Your scores:\nCurrent score: ${score}\nLifetime score: ${allTimeScore}`,
       ephemeral: true,
     });
   },
