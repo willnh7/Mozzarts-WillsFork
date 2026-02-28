@@ -197,6 +197,18 @@ export const _test = {
   normalize,
 };
 
+/**
+ * This is the main command export in which the user can invoke to run
+ * a game of trivia. The command handler manages the whole gameplay flow, including:
+ * - Difficulty selection
+ * - Voice channel connection
+ * - Round management (playing previews, collecting answers, scoring)
+ * - Final scoreboard display
+ * 
+ * The command relies heavily on the helper functions and game state management
+ * to keep track of the current session, scores, and question generation. Essentially following
+ * OOP principles. (Note: the code does need to be simplified and cleaned up)
+ */
 export default {
   data: new SlashCommandBuilder()
     .setName("trivia")
@@ -210,7 +222,7 @@ export default {
     if (existing?.active) {
       return interaction.reply({ content: "⚠️ Trivia is already running in this server.", ephemeral: true });
     }
-
+    // Difficulty selection buttons for users to select 
     // Difficulty selection UI
     const embed = new EmbedBuilder()
       .setColor(0x1db954)
@@ -223,20 +235,25 @@ export default {
         { name: "Medium", value: "2 points • album or track-title questions", inline: true },
         { name: "Hard", value: "3 points • release-year questions", inline: true }
       );
-
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("trivia_difficulty_easy").setLabel("Easy").setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId("trivia_difficulty_medium").setLabel("Medium").setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId("trivia_difficulty_hard").setLabel("Hard").setStyle(ButtonStyle.Danger)
     );
-
+    // Send the message and wait for the user to select a difficulty.
     await interaction.reply({ embeds: [embed], components: [row] });
     const pickMsg = await interaction.fetchReply();
-
+    /**
+     * The collector listens for the button and resolves with the selected difficulty
+     * and also handles the case where the user takes too long to respond(timeout, and aborts game).
+     * Once selection is made or timeout, we disable the buttons.
+     */
     const difficulty = await new Promise((resolve) => {
       const collector = pickMsg.createMessageComponentCollector({
+        // Timeout limit(60 sec)
         time: 60000,
         max: 1,
+        // Filter to ensure the user who initiated the command can click the buttons and only those buttons.
         filter: (i) =>
           i.user.id === interaction.user.id &&
           i.customId.startsWith("trivia_difficulty_"),
@@ -251,7 +268,8 @@ export default {
         if (!collected.size) resolve(null);
       });
     });
-
+    // Disable difficulty buttons, if not already disabled. Prevents multiple selections and
+    // also provides feedback that selection was received or timed out.
     try {
       const disabledRow = new ActionRowBuilder().addComponents(
         row.components.map((b) => ButtonBuilder.from(b).setDisabled(true))
@@ -264,26 +282,33 @@ export default {
         ephemeral: true,
       });
     }
-
+    // If the difficulty selection timeout occurs, we tell the user
+    // and abort the game setup. They can run the command again to start again
     if (!difficulty) {
       return interaction.followUp({
         content: "⏱️ Difficulty selection timed out. Run **/trivia** again to play again!",
         ephemeral: true,
       });
     }
-
+    // Finds the vc that the bot will enter to play the music previews and the tc 
+    // where the questions will be posted. The vc is required to play the game, 
+    // but for the tc we can fall back to the channel where the command was invoked 
+    // if a channel with the specified name is not found.
     const vc = findVoiceChannel(guild);
     const tc = findTextChannel(guild, interaction.channel);
-
+    // If the required vc and tc are not found we abort and let the user know to set them up.
     if (!vc) {
       return interaction.followUp({ content: `❌ Missing voice channel **${VOICE_CHANNEL_NAME}**.`, ephemeral: true });
     }
     if (!tc) {
       return interaction.followUp({ content: `❌ Missing text channel **#${TEXT_CHANNEL_NAME}**.`, ephemeral: true });
     }
-
+    // Session init (flowchart: instructions given)
+    // This resets scores for all users in the guild,
+    // TODO: find a way to preserve scores across multiple games while still allowing for new players to join with 0 points.
+    // Have a admin manually reset scores command so that scores can persist across games?
     resetScores(guild.id);
-
+     // This session object will be used to keep track of the current game state.
     const session = {
       active: true,
       terminated: false,
@@ -305,10 +330,12 @@ export default {
       roundMessageId: null,
       tmpFile: null,
     };
+    // Sets the session in the global game state 
+    // so that it can be accessed by other parts of the code to manage the games flow and state.
     setSession(guild.id, session);
-
+    // Gets the genre preference for the guild, maybe have it just for the game and add a genre picker?
     const genre = getGenre(guild.id);
-
+    // Sends the initial instructions message to the text channel, outlining the rules and how to play the game.
     await tc.send(
       `📢 **Music Trivia started!**\n` +
         `Difficulty: **${difficulty.toUpperCase()}** • Genre: **${genre}**\n\n` +
@@ -318,20 +345,28 @@ export default {
         `🔁 A replay button lets you hear the song one more time; using it restarts the timer (only once per round).\n` +
         `💡 A hint button provides one clue per round.\n`
     );
-
+    // flowchart: User in Game channel? (loop)
+    // Check if the user in the Game vc channel before starting the game. We give 
+    // them 2 minutes before aborting the game setup. 
     const ok = await waitForUserInVC(guild, interaction.user.id, vc.id, 120000);
+    // If they are not in the vc after 2 minutes we clear the session and abort the game setup
     if (!ok) {
       clearSession(guild.id);
       return tc.send(`❌ <@${interaction.user.id}> didn’t join **${VOICE_CHANNEL_NAME}** in time. Game cancelled.`);
     }
-
+    // Connect once for all 10 rounds instead of connecting and reconnecting for each round.
     let connection = null;
     let player = null;
 
+    // We wrap the whole game flow in a try catch finally to ensure that if err occur we can clean up 
+    // the connection and session in the finally block to prevent orphaned connections or sessions that block future games from starting.
     try {
+      // Joins the vc and sets up the audio player
       const voice = await ensureVoice(guild, vc);
+      // We keep the connection and player in variables that can be accessed and used throughout the game.
       connection = voice.connection;
       player = voice.player;
+      
       // Keep track of every user who has wrote an answer so their games played stat can be updated
       const playersAcrossAllRounds = new Set();
       // The 10 rounds are here, this is the core gameplay loop where we play previews, collect answer, and manage the state for each round.
@@ -344,11 +379,18 @@ export default {
         setSession(guild.id, ssVoice);
       }
 
+      // The 10 rounds are here, this is the core gameplay loop where we play previews, collect answer, and 
+      // manage the state for each round.
+      // TODO: Add a way to break out of the loop early if there are no players 
+      // or if the admin wants to end the game early.(Maybe even user who invoked it too?)
       for (let round = 1; round <= 10; round++) {
         const s = getSession(guild.id);
+        // check for an administrator-initiated termination 
         if (s?.terminated) break;
         if (!s?.active) break;
-
+        //TODO: Prone to a bug if multiple users are playing and the host leaves, maybe have the
+        // the game be to a single player or have a way to transfer host if the host leaves?
+        // (Just an idea that we may not have the time for)
         const stillInVc = await waitForUserInVC(guild, interaction.user.id, vc.id, 60000);
         if (!stillInVc) {
           await tc.send(`⚠️ <@${interaction.user.id}> please re-join **${VOICE_CHANNEL_NAME}** to continue...`);
@@ -358,7 +400,9 @@ export default {
             break;
           }
         }
-
+        // Round state
+        // always pull a fresh random track; previous connection logic
+        // (err.g. from /game) has been removed and is no longer relevant.
         const track = await getRandomItunesTrack(genre);
         const tmp = await downloadPreview(track.previewUrl);
 
@@ -366,8 +410,11 @@ export default {
         updated.round = round;
         updated.currentTrack = track;
         updated.tmpFile = tmp;
+        // Sets the current track and tmp file in the session and updates the round so that it can be accessed by the answer collection logic
+        // and the replay button logic to manage the game state and flow properly
         setSession(guild.id, updated);
-
+        // Sends a message to tc to indicate the round is starting and that the preview is playing. Just UI feedback
+        // and also to allow the user to know how long the preview plays for.
         const listenEmbed = new EmbedBuilder()
           .setColor(0x2b2d31)
           .setTitle(`🎧 Round ${round}/10`)
@@ -377,8 +424,9 @@ export default {
             { name: "Genre", value: String(genre).toUpperCase(), inline: true }
           );
 
-        const listenMsg = await tc.send({ embeds: [listenEmbed] });
-
+          // We keep a reference to this message so that we can delete it after the preview is over to keep the channel clean.
+          const listenMsg = await tc.send({ embeds: [listenEmbed] });
+        // flowchart: User listens to song for 30 seconds -> question + answers are shown in tc
         try {
           await playPreview(player, tmp, guild.id);
 
