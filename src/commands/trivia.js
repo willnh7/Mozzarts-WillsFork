@@ -228,12 +228,33 @@ export default {
       .setColor(0x1db954)
       .setTitle("🎵 Music Trivia")
       .setDescription(
-        `Select a difficulty to begin (5 questions). You’ll hear a 30s preview and then have 15 seconds to answer each multiple-choice question. A replay button allows one additional listen per song. A hint button provides a single clue per round. No hints for Hard difficulty.`
+        `Welcome to Music Trivia! 🎵
+        We hope you enjoy playing and testing your music knowledge when it comes to several **genres** of music!
+
+        Here will be some of the commands available to you:
+
+        - ✅ **/trivia**: Starts a new game of music trivia. 
+
+        - **/leaderboard**: Displays the top 10 leaderboard to show the top trivia players!
+
+        - **/genre**: Sets the genre for the music trivia.
+
+        - ❌ **/terminate**: Lets you **end** the game early!
+
+        - **/stats**: Shows your personal trivia stats
+
+        - **/activeplayers**: Shows the active players of the current game.
+
+        - **/gameinfo**: Shows info about the current game, like difficulty, genre, and how many rounds left.
+
+        - **/score**: Shows your current score in the current game
+
+        **Now select a difficulty to start the game!**`
       )
       .addFields(
-        { name: "Easy", value: "1 point • artist or genre questions", inline: true },
-        { name: "Medium", value: "2 points • album or track-title questions", inline: true },
-        { name: "Hard", value: "3 points • release-year questions", inline: true }
+        { name: "Easy", value: "1 point • **artist** or **genre** questions", inline: true },
+        { name: "Medium", value: "2 points • **album** or **track-title** questions", inline: true },
+        { name: "Hard", value: "3 points • **release-year** questions", inline: true }
       );
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("trivia_difficulty_easy").setLabel("Easy").setStyle(ButtonStyle.Success),
@@ -338,12 +359,14 @@ export default {
     // Sends the initial instructions message to the text channel, outlining the rules and how to play the game.
     await tc.send(
       `📢 **Music Trivia started!**\n` +
-        `Difficulty: **${difficulty.toUpperCase()}** • Genre: **${genre}**\n\n` +
-        `➡️ Join voice channel **${VOICE_CHANNEL_NAME}**.\n` +
-        `✅ You’ll hear **30s** of a song preview.\n` +
-        `💬 After the preview ends you’ll have **15 seconds** to answer using the multiple-choice buttons in <#${tc.id}>.\n` +
-        `🔁 A replay button lets you hear the song one more time; using it restarts the timer (only once per round).\n` +
-        `💡 A hint button provides one clue per round. **No hints for Hard difficulty**.\n`
+        `The difficulty you chose was: **${difficulty.toUpperCase()}** • The current genre is: **${genre}**\n\n` +
+        `Here are the rules of how to play the music trivia game!` + 
+        `➡️ **First**, join the voice channel **${VOICE_CHANNEL_NAME}** to hear the previews we will play to you.\n` +
+        `✅ You’ll hear **30s** of a song preview and have time to guess the correct answer after.\n` +
+        `💬 When the preview ends you’ll have **15 seconds** to answer the question using the **multiple-choice** buttons in <#${tc.id}>.\n` +
+        `🔁 A **replay** button lets you hear the song one more time; using it restarts the timer (only once per round).\n` +
+        `💡 A hint button provides one clue per round. **No hints for Hard difficulty**.\n` 
+
     );
     // flowchart: User in Game channel? (loop)
     // Check if the user in the Game vc channel before starting the game. We give 
