@@ -848,8 +848,6 @@ const { base, replayAdd } = difficultyTimer[difficulty];
       } else {
         const highestScorer = final[0];
         addGameWon(guild.id, highestScorer[0]); // increase their games won stat
-        //const lines = final.slice(0, 10).map(([uid, pts], i) => `${i + 1}. <@${uid}> — **${pts}**`);
-        //await tc.send(`🏁 **Game over! Final scoreboard:**\n${lines.join("\n")}`);
       }
 
       // ===== END OF GAME (SKIP IF TERMINATED) =====
