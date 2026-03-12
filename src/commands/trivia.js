@@ -179,7 +179,17 @@ async function playPreview(player, filePath, guildId) {
  * @returns
  */
 function pointsFor(difficulty, hintsUsed) {
-  return difficulty === "easy" ? 1 : difficulty === "medium" ? 2 : 3;
+  const basePts = {
+    easy: 1,
+    medium: 2,
+    hard: 3,
+  }
+  let pts = basePts[difficulty] || 1;
+
+  if (hintsUsed) {
+    pts = Math.max(1, pts - hintsUsed);
+  }
+  return pts;
 }
 
 // utility used by tests; not part of the command logic itself
@@ -731,9 +741,15 @@ export default {
             } catch(err) { console.error("Failed to disable components:", err); }
 
             const hint = makeHint(track, question.type);
-            await i.reply({ content: `💡 Hint: ${hint}`, ephemeral: true }).catch(async () => {
-              await tc.send(`💡 Hint: ${hint}`).catch(() => {});
-            });
+            if(difficulty === "medium") {
+              await i.reply({ content: `💡 Hint: ${hint}\n⚠️**Hint used**: points deducted by 1`, ephemeral: true }).catch(async () => {
+                await tc.send(`💡 Hint: ${hint}`).catch(() => {});
+              });
+            } else {
+              await i.reply({ content: `💡 Hint: ${hint}`, ephemeral: true }).catch(async () => {
+                await tc.send(`💡 Hint: ${hint}`).catch(() => {});
+              });
+            }
             return;
           }
         });
@@ -791,7 +807,9 @@ export default {
             const answerLine = `✅ **Correct answer:** ${question.correctAnswer}`;
 
             if (winner.correct && winner.userId) {
-              let pts = pointsFor(difficulty);
+              
+              let pts = hintUsed ? pointsFor(difficulty, true) : pointsFor(difficulty, false);
+
               if(doublePtsActive) {
                 pts *= 2;
                 // Changes the question points to display the double points gained
