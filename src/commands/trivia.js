@@ -370,14 +370,15 @@ export default {
     await tc.send(
       `📢 **Music Trivia started!**\n` +
         `The difficulty you chose was: **${difficulty.toUpperCase()}** • The current genre is: **${genre}**\n\n` +
-        `Here are the rules of how to play the music trivia game!` + 
-        `➡️ **First**, join the voice channel **${VOICE_CHANNEL_NAME}** to hear the previews we will play to you.\n` +
-        `✅ You’ll hear **30s** of a song preview and have time to guess the correct answer after.\n` +
-        `💬 When the preview ends you’ll have **15 seconds** to answer the question using the **multiple-choice** buttons in <#${tc.id}>.\n` +
-        `🔁 A **replay** button lets you hear the song one more time; using it restarts the timer (only once per round).\n` +
-        `💡 A hint button provides one clue per round with a penalty applied in the difficulty **Medium** of -1 point. **No hints for Hard difficulty**.\n` +
-        `⚠️ Wrong answers will be marked with a red ❌ and correct answers with a green ✅.\n` +
-        `🏆 At the end of 5 rounds, the player with the most points wins! In case of a tie, the player who answered faster wins.\n` +
+        `Here are the rules of how to play the music trivia game!\n` + 
+        `➡️ **First**, join the voice channel **${VOICE_CHANNEL_NAME}** to hear the previews we will play to you.\n\n` +
+        `✅ You’ll hear **30s** of a song preview and have time to guess the correct answer after.\n\n` +
+        `💬 When the preview ends you’ll have **15 seconds** to answer the question using the **multiple-choice** buttons in <#${tc.id}>.\n\n` +
+        `🔁 The **replay** button lets you hear the song one more time; using it restarts the timer (only once per round).\n\n` +
+        `💡 The **hint** button provides one clue per round with a **penalty** applied **only** in the difficulty **Medium** of -1 point. **No hints for Hard difficulty**.\n\n` +
+        `⚠️ Wrong answers will be marked with a red ❌ and correct answers with a green ✅.\n\n` +
+        `🏅 Points are awarded based on difficulty: **Easy**: 1 point, **Medium**: 2 points, **Hard**: 3 points.\n\n` +
+        `🏆 At the end of 10 rounds, the player with the most points wins! In case of a tie, the player who answered faster wins.\n\n` +
         `📊 Your score and stats will be tracked across games, so keep playing to climb the leaderboard and show off your music knowledge!` 
 
     );
@@ -868,15 +869,16 @@ export default {
 
             if (winner.correct && winner.userId) {
               
-              let pts = hintUsed ? pointsFor(difficulty, true) : pointsFor(difficulty, false);
+              let pts =  pointsFor(difficulty, false);
 
               if(doublePtsActive) {
                 pts *= 2;
                 // Changes the question points to display the double points gained
-                question.points *= 2;
+                question.points = pts;
               }
+              pts = hintUsed && difficulty === "medium" ? pts - 1 : pts; // apply hint penalty if medium difficulty and hint was used
               // TODO: This round will need to be changed to match our 10 rounds
-              if(round < 5) {
+              if(round < 10) {
                 await tc.send(`🎉 <@${winner.userId}> got it right and earned **${pts}** points! Get ready for the next round...`);
                 const powerupWon = awardRandomPowerup(guild.id, winner.userId);
                 if (powerupWon) {
